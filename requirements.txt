@@ -1,0 +1,36 @@
+# Core ML frameworks
+torch==2.1.2
+torchvision==0.16.2
+triton==2.1.0
+
+# Hugging Face ecosystem
+transformers==4.37.2
+datasets==4.5.0
+accelerate==0.21.0
+peft==0.5.0
+tokenizers==0.15.1
+safetensors==0.7.0
+sentencepiece==0.1.99
+bitsandbytes==0.45.5
+
+# LLaVA
+llava==1.2.2.post1
+
+# Vision
+timm==0.6.13
+opencv-python==4.10.0.84
+einops==0.6.1
+einops-exts==0.0.4
+
+# Data & scientific computing
+numpy==1.26.4
+pandas==2.3.3
+scipy==1.15.3
+scikit-learn==1.2.2
+matplotlib==3.10.8
+
+# Web UI
+gradio==4.16.0
+
+# Jupyter
+ipykernel==7.1.0
