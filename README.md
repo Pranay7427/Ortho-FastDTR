@@ -23,7 +23,7 @@ Large vision-language models (VLMs) are highly vulnerable to **multimodal jailbr
 DTR introduces a new formulation of the **safety-relevant distributional shift** induced by the visual modality. It dynamically adjusts visual token weights to redirect harmful queries along safety-enhancing trajectories, effectively counteracting adversarial visual inputs while preserving the model's general capabilities and inference efficiency.
 
 <p align="center">
-  <img src="assets/overview.png" width="85%" alt="DTR Overview"/>
+  <img src="assets/DTR.png" width="85%" alt="DTR Overview"/>
 </p>
 
 ### Key Advantages
@@ -40,7 +40,7 @@ This repository includes the necessary [LLaVA](https://github.com/haotian-liu/LL
 
 ```bash
 # 1. Clone this repository
-git clone https://github.com/<your-username>/DTR.git
+git clone https://github.com/TanqiuJiang/DTR.git
 cd DTR
 
 # 2. Create and activate a conda environment
