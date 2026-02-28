@@ -132,38 +132,6 @@ DTR operates in three stages:
 | `η` | 0.01 | Learning rate (AdamW) |
 | `β` | — | Token eviction threshold (optional; 20% eviction rate recommended) |
 
----
-
-## Results
-
-### Attack Robustness (ASR ↓)
-
-DTR consistently reduces attack success rates across diverse benchmarks and VLM architectures:
-
-| Defense | HADES S | HADES S+A | HADES S+T+A | MM-SafetyBench S+T |
-|---|---|---|---|---|
-| Base (llava-llama2-7b) | 31.4% | 44.9% | 56.9% | 74.5% |
-| AdaShield | 7.5% | 5.5% | 17.6% | 13.6% |
-| CoCA | 23.6% | 20.8% | 35.7% | 53.6% |
-| ShiftDC | 20.0% | 32.9% | 16.8% | 13.6% |
-| **DTR** | **8.9%** | **4.8%** | **15.9%** | **10.0%** |
-
-### Utility Preservation (MM-Vet VLC ↑)
-
-DTR maximally retains benign-task performance:
-
-| Defense | OCR | Math | Spatial | Recognition | Knowledge | Language Gen. |
-|---|---|---|---|---|---|---|
-| Base | 33.4 | 29.2 | 36.8 | 50.3 | 43.5 | 45.0 |
-| **DTR** | **30.6** | **23.8** | **39.1** | **50.3** | **40.7** | **44.4** |
-
-### Inference Efficiency
-
-| Base | AdaShield | CoCA | ShiftDC | **DTR** |
-|---|---|---|---|---|
-| 3.65s | 5.24s | 4.26s | 10.66s | **4.01s** |
-
----
 
 ## Project Structure
 
@@ -203,4 +171,4 @@ This work was supported by the National Science Foundation under Grant No. 24051
 
 ## License
 
-This project is released under the [Apache 2.0 License](LICENSE).
+This project is released under the [MIT License](LICENSE).
