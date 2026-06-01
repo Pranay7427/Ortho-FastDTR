@@ -153,11 +153,13 @@ DTR/
 If you find this work useful, please cite:
 
 ```bibtex
-@inproceedings{jiang2026dtr,
-  title={Dynamic Token Reweighting for Robust Vision-Language Models},
-  author={Jiang, Tanqiu and Liang, Jiacheng and Zhu, Rongyi and Zhou, Jiawei and Ma, Fenglong and Wang, Ting},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year={2026}
+@InProceedings{Jiang_2026_CVPR,
+    author    = {Jiang, Tanqiu and Liang, Jiacheng and Zhu, Rongyi and Zhou, Jiawei and Ma, Fenglong and Wang, Ting},
+    title     = {Dynamic Token Reweighting for Robust Vision-Language Models},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2026},
+    pages     = {24481-24491}
 }
 ```
 
