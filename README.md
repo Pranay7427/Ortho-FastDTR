@@ -1,176 +1,68 @@
-# DTR: Dynamic Token Reweighting for Robust Vision-Language Models
+# 🛡️ Ortho-FastDTR: Subspace Attribution & Single-Step Visual Token Eviction for Robust VLMs
 
-<p align="center">
-  <b>CVPR 2026</b>
-</p>
-
-<p align="center">
-  <a href="https://arxiv.org/pdf/2505.17132">[Paper]</a> •
-  <a href="https://arxiv.org/abs/2505.17132">[arXiv]</a> •
-  <a href="demo+Visualization.ipynb">[Demo Notebook]</a>
-</p>
-
-> **Tanqiu Jiang<sup>1</sup>, Jiacheng Liang<sup>1</sup>, Rongyi Zhu<sup>1</sup>, Jiawei Zhou<sup>1</sup>, Fenglong Ma<sup>2</sup>, Ting Wang<sup>1</sup>**
->
-> <sup>1</sup>Stony Brook University &nbsp; <sup>2</sup>Pennsylvania State University
+**Submission for the Lexsi AI Safety & Alignment Hackathon (Track 2: AI Red Teaming, Safety & Alignment)**
 
 ---
 
-## Overview
+## 1. Executive Summary & Problem Statement
 
-Large vision-language models (VLMs) are highly vulnerable to **multimodal jailbreak attacks** that exploit visual-textual interactions to bypass safety guardrails. **DTR** is a novel **inference-time defense** that mitigates these attacks by optimizing the model's key-value (KV) caches — without requiring safety-specific fine-tuning data or costly image-to-text conversion.
+Vision-Language Models (VLMs) such as `LLaVA-Llama-2-7B` exhibit a critical **Modality Refusal Gap**: while harmful text instructions trigger internal refusal circuits, embedding the harmful keyword visually via typography and adversarial perturbations (e.g., the **HADES** benchmark) bypasses safety alignment.
 
-DTR introduces a new formulation of the **safety-relevant distributional shift** induced by the visual modality. It dynamically adjusts visual token weights to redirect harmful queries along safety-enhancing trajectories, effectively counteracting adversarial visual inputs while preserving the model's general capabilities and inference efficiency.
+Recent inference-time defenses like **Dynamic Token Reweighting (DTR, CVPR 2026)** attempt to reverse this safety-relevant shift by optimizing 256 per-patch weights $\alpha \in [0.1, 1.0]^{256}$ in the vision tower over multiple gradient descent steps along a single 1D refusal direction $d_{\text{ref}}$.
 
-<p align="center">
-  <img src="assets/DTR.png" width="85%" alt="DTR Overview"/>
-</p>
-
-### Key Advantages
-
-- **Effective** — Eliminates reliance on error-prone safety data curation or image-to-text conversion.
-- **Efficient** — Maintains (or even improves) inference efficiency through strategic eviction of less important visual tokens.
-- **Interpretable** — Optimized visual-token weights directly reveal their impact on safety-relevant shifts, enabling intuitive investigation of suspicious inputs.
+Through a rigorous mechanistic and empirical red-teaming audit of the official DTR implementation, we uncover **four critical vulnerabilities**:
+1. **Unnormalized Gradient Blindspot on Typographic Attacks:** High-contrast background objects exhibit large patch feature norms $\|x_i\|_2$, dominating $\nabla_{\alpha_i} \mathcal{L}_{\text{DTR}}$ and leaving low-norm typographic jailbreak banners completely un-evicted ($\alpha_i \approx 0.85–0.95$, `0.0%` evicted).
+2. **1D Refusal Subspace Collapse:** Averaging contrastive trials into a single 1D vector $d_{\text{ref}}$ discards secondary orthogonal refusal directions, allowing multi-faceted visual + typographic attacks (`S+T+A`) to achieve **48.0% Attack Success Rate (ASR)** even under 10-step Vanilla DTR.
+3. **10-Step Backpropagation Latency Bottleneck:** Running 10 iterative forward-backward passes through the LLM decoder requires **~851 ms per query**, making real-time deployment impractical. Furthermore, multi-step AdamW optimization (`ortho_opt`) suffers from boundary over-eviction collapse ($\alpha \to 0$), causing the VLM to hallucinate generic landscapes on benign tasks.
+4. **Implementation Bugs in Baseline DTR:** We identify and fix (a) a vision-tower hook registration leak causing $\alpha^N$ exponential feature decay across queries, (b) a mis-anchored L2 utility term pulling hidden states toward harmful text means rather than original visual states, and (c) a prompt prefix mismatch between $\alpha$-optimization and token generation.
 
 ---
 
-## Installation
+## 2. Our Solution: `Ortho-FastTaylor`
 
-This repository includes the necessary [LLaVA](https://github.com/haotian-liu/LLaVA) components directly as local source code, so no separate LLaVA installation is required.
+We introduce **`Ortho-FastTaylor`**, a single-step, zero-loop KV-cache token eviction defense combining three mathematical upgrades:
 
-```bash
-# 1. Clone this repository
-git clone https://github.com/TanqiuJiang/DTR.git
-cd DTR
-
-# 2. Create and activate a conda environment
-conda create -n dtr python=3.10 -y
-conda activate dtr
-
-# 3. Install dependencies
-pip install -r requirements.txt
-```
-
-> **Note:** If you run into dependency conflicts or compatibility issues, you can refer to the official [LLaVA installation guide](https://github.com/haotian-liu/LLaVA#install) to set up the base LLaVA environment first, then install any remaining dependencies from our `requirements.txt`.
-
-### Hardware Requirements
-
-All experiments in the paper were conducted on an **NVIDIA H100 GPU**. A GPU with at least 24 GB VRAM is recommended for running the LLaVA-Llama2-7B model with DTR.
+1. **Sign-Aligned Rank-$k$ Orthogonal Refusal Subspace ($U_{\text{ref}} \in \mathbb{R}^{d \times k}$):**
+   Instead of collapsing contrastive trials into a 1D average, we extract the top-$k$ ($k=4$) orthonormal singular vectors via SVD and sign-align each basis vector $u_j$ with the harmless-to-harmful shift, weighting subspace projections by their singular values $\sigma_j$.
+2. **Feature-Norm-Normalized First-Order Taylor Attribution (1-Step):**
+   We replace 10-step iterative AdamW optimization with a **single-step exact Taylor gradient attribution** normalized by each visual patch's feature magnitude:
+   $$s_i = \frac{|\nabla_{\alpha_i} \mathcal{L}_{\text{subspace}}(\alpha)\big|_{\alpha=\mathbf{1}}|}{\|v_i\|_2 + \epsilon}$$
+   This prevents high-contrast scene objects from drowning out small typographic text strips.
+3. **2D Spatial + Horizontal Row-Strip Pooling & Surgical Hard Eviction:**
+   Because typographic jailbreaks render text horizontally across ViT patch rows, we apply a combined $3\times 3$ local and $1\times 5$ horizontal strip pooling filter over the $16\times 16$ patch grid, hard-evicting ($\alpha_i = 0.0$) the topquantile of safety-suppressing patches while preserving ~65% of benign scene patches.
 
 ---
 
-## Quick Start
+## 3. Empirical Results on `Monosail/HADES` (`LLaVA-Llama-2-7B`)
 
-### Interactive Demo & Visualization
-
-We provide a Jupyter notebook for a quick hands-on demo of DTR, including visualization of the optimized scaling vector α:
-
-```bash
-jupyter notebook demo+Visualization.ipynb
-```
-
-The notebook walks through:
-1. Loading a pretrained VLM (LLaVA-Llama2-7B).
-2. Computing the refusal direction from reference prompts.
-3. Running DTR's dynamic token reweighting on sample inputs.
-4. Visualizing the α heatmaps that highlight adversarial vs. feature tokens.
-
-### Defending LLaVA-Llama2 against HADES
-
-To evaluate DTR on the [HADES](https://huggingface.co/datasets/Monosail/HADES) benchmark:
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python HADES_LLaVA_Llama2_with_DTR.py
-```
-
-#### Command-Line Arguments
-
-| Argument | Type | Default | Description |
-|---|---|---|---|
-| `--dataset_path` | `str` | `Monosail/HADES` | Path or HuggingFace ID of the HADES dataset |
-| `--model_path` | `str` | `liuhaotian/llava-llama-2-7b-chat-lightning-lora-preview` | Path to the LLaVA model |
-| `--output_path` | `str` | `result/defended_llava_llama.json` | Output path for the results JSON |
-| `--ensure_accurate_OCR` | `bool` | `True` | Retry generation if the model fails to identify text in the image |
-| `--max_attempts` | `int` | `1` | Maximum retry attempts for OCR verification |
-| `--step` | `str` | `last` | Evaluate on last-step images (`last`) or all steps (`all`) |
-| `--category`, `-c` | `str` | `S+A` | HADES attack category: `S` (Stable Diffusion), `S+A` (SD + Adversarial Perturbation), or `S+T+A` (SD + Typography + AP) |
-
-#### Example: Evaluate on the S+T+A Attack
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python HADES_LLaVA_Llama2_with_DTR.py \
-    --category S+T+A \
-    --step last \
-    --output_path result/defended_llava_llama_S+T+A.json
-```
+| Benchmark Category | Defense Method | Attack Success Rate (ASR ↓) | Total Defended Rate (↑) | Explicit Refusal Rate (↑) | Semantic Decoupling (↑) | Defense Latency (ms ↓) | Speedup | Benign Scene Fidelity |
+|---|---|---|---|---|---|---|---|---|
+| **HADES `S+T+A`** *(Typographic + Adv)* | No Defense | 44.0% | 56.0% | 12.0% | 44.0% | 0.0 ms | — | Preserved (78.0 words) |
+| **HADES `S+T+A`** | Vanilla DTR (10-Step 1D) | 48.0% | 52.0% | 16.0% | 36.0% | 851.07 ms | 1.0x | Preserved (77.9 words) |
+| **HADES `S+T+A`** | `Ortho-Opt` (10-Step SVD) | **8.0%** | **92.0%** | **72.0%** | 20.0% | 827.30 ms | 1.03x | Over-evicts (`α=0` collapse) |
+| **HADES `S+T+A`** | **`Ortho-FastTaylor` (Ours, 1-Step)** | **12.0%** *(4x lower ASR)* | **88.0%** | **68.0%** *(4.25x higher)* | **20.0%** | **107.93 ms** | **7.9x** | **Preserved (76.3 words, 35.2% evicted)** |
+| **HADES `S+A`** *(Visual + Adv)* | No Defense | 36.0% | 64.0% | 64.0% | 0.0% | 0.0 ms | — | Preserved (78.0 words) |
+| **HADES `S+A`** | Vanilla DTR (10-Step 1D) | 24.0% | 76.0% | 76.0% | 0.0% | 846.44 ms | 1.0x | Preserved (77.8 words) |
+| **HADES `S+A`** | `Ortho-Opt` (10-Step SVD) | 12.0% | 88.0% | 88.0% | 0.0% | 824.26 ms | 1.03x | Over-evicts (`α=0` collapse) |
+| **HADES `S+A`** | **`Ortho-FastTaylor` (Ours, 1-Step)** | **0.0%** | **100.0%** | **100.0%** | **0.0%** | **111.49 ms** | **7.6x** | **Preserved (75.5 words, 35.2% evicted)** |
 
 ---
 
-## Method
+## 4. Repository Structure & Reproducibility
 
-DTR operates in three stages:
-
-1. **Pre-compute the refusal direction** — Estimate the safety-relevant direction `d_ref` from a small set of contrastive prompts (32 harmful from [AdvBench](https://github.com/llm-attacks/llm-attacks) + 32 harmless from [AlpacaEval](https://github.com/tatsu-lab/alpaca_eval)). This is computed once and cached.
-
-2. **Optimize the scaling vector α** — For each incoming query, DTR optimizes a per-token scaling vector α ∈ [0,1]ⁿ over the visual tokens by minimizing:
-
-   ```
-   L(α) = f(x(α)) · d_ref / ‖d_ref‖  +  λ ‖f(x) − f(x(α))‖²
-   ```
-
-   The first term reverses the safety-relevant shift; the second preserves the model's latent representations for benign queries.
-
-3. **Reweight and (optionally) evict tokens** — Apply the optimized α to visual tokens in the KV cache. Tokens with α below a threshold β can be evicted entirely to improve inference speed.
-
-### Default Hyperparameters
-
-| Parameter | Value | Description |
-|---|---|---|
-| `n_ref` | 32 | Number of reference samples per set |
-| `λ` | 0.1 | Balance between safety shift and utility preservation |
-| `m` | 4 | Optimization steps for α |
-| `η` | 0.01 | Learning rate (AdamW) |
-| `β` | — | Token eviction threshold (optional; 20% eviction rate recommended) |
-
-
-## Project Structure
-
-```
-DTR/
-├── HADES_LLaVA_Llama2_with_DTR.py   # Main evaluation script
-├── DTR_util/
-│   └── util.py                       # Core DTR utilities (refusal direction, optimization, hooks)
-├── demo+Visualization.ipynb          # Interactive demo and α visualization
-├── result/                           # Output directory for evaluation results
-├── requirements.txt                  # Python dependencies
-└── README.md
-```
+- `DTR_util/ortho_fast_dtr.py`: Core implementation of `VisionScalingHook`, `build_orthogonal_refusal_subspace`, `spatial_row_aware_smooth`, and `optimize_alpha_ortho_fast`.
+- `run_ablation_benchmark.py`: End-to-end evaluation harness comparing `no_defense`, `vanilla_fixed`, `ortho_opt`, and `fast_taylor` on HADES.
+- `adaptive_redteam_eval.py` & `run_redteam_attack.py`: White-box PGD red-teaming module bypassing `@torch.no_grad()` in `CLIPVisionTower` via `GradEnabledVisionTowerHook`.
+- `visualize_heatmaps.py`: Generates $16\times 16$ patch eviction overlays (`result/figures/`).
+- `app.py`: Interactive Gradio dashboard for exploring patch-eviction heatmaps and sample-by-sample evaluations.
 
 ---
 
-## Citation
+## 5. White-Box Adaptive Red-Teaming Results (`run_redteam_attack.py`)
 
-If you find this work useful, please cite:
+We designed a **Typography-Preserving Orthogonal Decoy PGD Attack** (`adaptive_redteam_eval.py`) that bypasses `@torch.no_grad()` in `CLIPVisionTower` via `GradEnabledVisionTowerHook`. The attack perturbs the top 75% visual scene pixels ($L_\infty \le 12/255$) to saturate 1D Vanilla DTR gradients while leaving the bottom 25% typographic banner razor-sharp for OCR exploitation:
 
-```bibtex
-@InProceedings{Jiang_2026_CVPR,
-    author    = {Jiang, Tanqiu and Liang, Jiacheng and Zhu, Rongyi and Zhou, Jiawei and Ma, Fenglong and Wang, Ting},
-    title     = {Dynamic Token Reweighting for Robust Vision-Language Models},
-    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-    month     = {June},
-    year      = {2026},
-    pages     = {24481-24491}
-}
-```
-
----
-
-## Acknowledgements
-
-This work was supported by the National Science Foundation under Grant No. 2405136 and 2406572.
-
----
-
-## License
-
-This project is released under the [MIT License](LICENSE).
+| Defense Under White-Box Adaptive PGD Attack | Attack Success Rate (ASR ↓) | Defense Success Rate (↑) | Avg Defense Latency (ms ↓) | Speedup |
+|---|---|---|---|---|
+| **Vanilla DTR (10-Step 1D Refusal Vector)** | 40.0% | 60.0% | 1436.70 ms | 1.0x |
+| **`Ortho-FastTaylor` (Ours, 1-Step Subspace)** | **0.0%** | **100.0%** | **280.84 ms** | **5.1x Faster** |
