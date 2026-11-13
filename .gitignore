@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+publish_to_hf.py
+upload_curated_split.py
+curated_hades_eval_split.jsonl
+vsi.yml
+it.sh
+result/smoke_test*
