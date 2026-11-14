@@ -60,7 +60,7 @@ We evaluate under two realistic adversary profiles targeting a deployed VLM (`LL
 2. **White-Box Adaptive Adversary (Typography-Preserving Orthogonal Decoy PGD):** The attacker has full white-box access to the VLM weights, the defense's 1D refusal vector $r$, and the token-reweighting mechanism. Using a custom differentiable vision-tower hook (`GradEnabledVisionTowerHook`), the attacker optimizes an $\ell_\infty \le 8/255$ perturbation over 10 PGD steps solely on the upper scene pixels (preserving the bottom 18% typographic strip so OCR remains intact). The attacker minimizes projection onto the 1D refusal vector while injecting high-gradient decoy salience into benign background patches to hijack Vanilla DTR's token eviction budget.
 
 ### Related Work
-* **HADES (Li et al., CVPR 2024 / ECCV 2024):** *Images are Achilles' Heel of Alignment: Exploiting Visual Vulnerabilities for Jailbreaking Multimodal Large Language Models.*
+* **HADES (Li et al., ECCV 2024):** *Images are Achilles' Heel of Alignment: Exploiting Visual Vulnerabilities for Jailbreaking Multimodal Large Language Models.*
 * **Dynamic Token Reweighting / DTR (CVPR 2026):** *Mitigating Multimodal Jailbreaks via Dynamic Token Reweighting.* Serves as our primary baseline audited and improved in this work.
 * **Representation Engineering & Refusal Direction (Zou et al., 2023; Arditi et al., NeurIPS 2024):** Demonstrated linear refusal directions in residual stream activations; we extend this from 1D to a sign-aligned Rank-4 SVD subspace for multimodal token attribution.
 * **LLaVA (Liu et al., NeurIPS 2023):** *Visual Instruction Tuning.*
