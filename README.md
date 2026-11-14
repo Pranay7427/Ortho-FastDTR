@@ -182,4 +182,4 @@ python app.py
 ### Declarations
 * **Work Done Outside Hackathon:** Base `LLaVA-Llama-2-7B` weights, `Monosail/HADES`, and the baseline `DTR` script (`HADES_LLaVA_Llama2_with_DTR.py`) are pre-existing open-source baselines. All mechanistic audits, `Ortho-FastTaylor` (`DTR_util/ortho_fast_dtr.py`), white-box Adaptive Decoy PGD (`adaptive_red_team.py`), benchmark evaluations, and the interactive Gradio Space were developed 100% during the hackathon.
 * **Author:** Pranay Kumar (`@Pranay7427`)
-* **LLM Usage Statement:** AI assistants were used for ~20–25% of the workflow (Gradio UI layout, plotting boilerplate, and markdown formatting); all core mathematical formulations, subspace projections, PGD hooks, and GPU evaluations were authored and verified by the me.
+* **LLM Usage Statement:** AI assistants were used for ~20–25% of the workflow (Gradio UI layout, plotting boilerplate, and markdown formatting); all core mathematical formulations, subspace projections, PGD hooks, and GPU evaluations were performed and verified by me (Pranay).
