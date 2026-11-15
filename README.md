@@ -1,3 +1,15 @@
+---
+title: Ortho Fastdtr Explorer
+emoji: 🛡️
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: 4.16.0
+app_file: app.py
+pinned: false
+license: apache-2.0
+---
+
 # Ortho-FastDTR: Breaking and Fixing Dynamic Token Reweighting via Subspace Attribution and Single-Step Visual Token Eviction
 
 **One-Line Claim:** By replacing 10-step 1D gradient optimization with 1-step feature-norm-normalized Taylor attribution over a Rank-4 SVD refusal subspace and horizontal strip pooling, `Ortho-FastTaylor` slashes multimodal jailbreak Attack Success Rate (ASR) by 4x (`48.0% -> 12.0%` on HADES `S+T+A` and `40.0% -> 0.0%` under white-box adaptive PGD) while accelerating defense latency by **7.9x (`851.07 ms -> 107.93 ms`)** with zero benign utility degradation.
@@ -167,7 +179,7 @@ We evaluate under two realistic adversary profiles targeting a deployed VLM (`LL
 
 ```bash
 # Clone and install reproducible environment (including local modified LLaVA via -e .)
-git clone [https://github.com/Pranay7427/Ortho-FastDTR.git](https://github.com/Pranay7427/Ortho-FastDTR.git)
+git clone https://github.com/Pranay7427/Ortho-FastDTR.git
 cd Ortho-FastDTR
 pip install -r requirements.txt
 
