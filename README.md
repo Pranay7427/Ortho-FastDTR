@@ -162,6 +162,7 @@ We evaluate under two realistic adversary profiles targeting a deployed VLM (`LL
 * **HF Collection:** [Ortho-FastDTR Lexsi AI Safety Hackathon Collection](https://huggingface.co/collections/Pranay7427/ortho-fastdtr-lexsi-ai-safety-hackathon-track-2)
 * **HF Dataset & Traces:** [Pranay7427/ortho-fastdtr-hades-benchmark](https://huggingface.co/datasets/Pranay7427/ortho-fastdtr-hades-benchmark)
 * **HF Interactive Space:** [Pranay7427/ortho-fastdtr-explorer](https://huggingface.co/spaces/Pranay7427/ortho-fastdtr-explorer)
+* **Google Colab (Run app.py on Cloud GPU):** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Pranay7427/Ortho-FastDTR/blob/main/Ortho_FastDTR_Colab.ipynb)
 * **GitHub Repository:** [Pranay7427/Ortho-FastDTR](https://github.com/Pranay7427/Ortho-FastDTR)
 
 ```bash
